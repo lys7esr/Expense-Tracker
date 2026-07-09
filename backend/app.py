@@ -11,8 +11,11 @@ import pandas as pd
 app = Flask(__name__)
 CORS(app)
 
-FILE_NAME = "expenses.csv"
-BUDGET_FILE = "budgets.csv"
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+
+FILE_NAME = DATA_DIR / "expenses.csv"
+BUDGET_FILE = DATA_DIR / "budgets.csv"
 
 # ================= INITIALIZE FILES =================
 def initialize_files():
@@ -212,4 +215,4 @@ def budget_status(month):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
