@@ -7,6 +7,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from io import BytesIO
 import pandas as pd
+from pathlib import Path 
 
 app = Flask(__name__)
 CORS(app)
