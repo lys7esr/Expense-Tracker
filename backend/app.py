@@ -18,7 +18,7 @@ DATA_DIR = BASE_DIR / "data"
 FILE_NAME = DATA_DIR / "expenses.csv"
 BUDGET_FILE = DATA_DIR / "budgets.csv"
 
-# ================= INITIALIZE FILES =================
+#INITIALIZE FILES
 def initialize_files():
     if not os.path.exists(FILE_NAME):
         pd.DataFrame(columns=["Date", "Category", "SubCategory", "Amount"]).to_csv(FILE_NAME, index=False)
@@ -29,7 +29,7 @@ def initialize_files():
 initialize_files()
 
 
-# ================= LOAD EXPENSES =================
+#LOAD EXPENSES
 def load_expenses():
     df = pd.read_csv(FILE_NAME)
 
@@ -47,7 +47,7 @@ def load_expenses():
     return df
 
 
-# ================= ADD EXPENSE =================
+#ADD EXPENSE
 @app.route("/add-expense", methods=["POST"])
 def add_expense():
     data = request.json
@@ -60,20 +60,20 @@ def add_expense():
     return jsonify({"message": "Expense added successfully"})
 
 
-# ================= GET ALL =================
+#GET ALL
 @app.route("/expenses", methods=["GET"])
 def get_expenses():
     return jsonify(pd.read_csv(FILE_NAME).to_dict(orient="records"))
 
 
-# ================= TOTAL =================
+#TOTAL
 @app.route("/total", methods=["GET"])
 def get_total():
     df = load_expenses()
     return jsonify({"total": float(df["Amount"].sum()) if not df.empty else 0})
 
 
-# ================= MONTHLY TOTALS =================
+#MONTHLY TOTALS
 @app.route("/monthly-totals", methods=["GET"])
 def monthly_totals():
     df = load_expenses()
@@ -84,7 +84,7 @@ def monthly_totals():
     return jsonify(monthly.to_dict(orient="records"))
 
 
-# ================= MONTHLY SUMMARY (SPECIFIC MONTH) =================
+#MONTHLY SUMMARY (SPECIFIC MONTH)
 @app.route("/monthly-summary/<month>", methods=["GET"])
 def monthly_summary(month):
     df = load_expenses()
@@ -103,7 +103,7 @@ def monthly_summary(month):
     })
 
 
-# ================= CATEGORY CHART =================
+#CATEGORY CHART
 @app.route("/chart", methods=["GET"])
 def category_chart():
     df = load_expenses()
@@ -129,7 +129,7 @@ def category_chart():
     return send_file(img, mimetype="image/png")
 
 
-# ================= MONTHLY LINE CHART =================
+#MONTHLY LINE CHART
 @app.route("/line-chart", methods=["GET"])
 def line_chart():
     df = load_expenses()
@@ -155,7 +155,7 @@ def line_chart():
     return send_file(img, mimetype="image/png")
 
 
-# ================= PIE CHART =================
+#PIE CHART
 @app.route("/pie-chart/<month>/<category>", methods=["GET"])
 def pie_chart(month, category):
     df = load_expenses()
@@ -179,7 +179,7 @@ def pie_chart(month, category):
     return send_file(img, mimetype="image/png")
 
 
-# ================= BUDGET SYSTEM =================
+#BUDGET SYSTEM
 @app.route("/set-budget", methods=["POST"])
 def set_budget():
     data = request.json

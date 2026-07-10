@@ -5,23 +5,15 @@ import matplotlib.pyplot as plt
 
 FILE_NAME = "expenses.csv"
 
-# ---------------------------------------------------
 # Create file if it does not exist
-# ---------------------------------------------------
 if not os.path.exists(FILE_NAME):
     pd.DataFrame(columns=["Date", "Category", "SubCategory", "Amount"]).to_csv(FILE_NAME, index=False)
 
-
-# ---------------------------------------------------
 # Load Data
-# ---------------------------------------------------
 def load_data():
     return pd.read_csv(FILE_NAME)
 
-
-# ---------------------------------------------------
 # Category & SubCategory Menu
-# ---------------------------------------------------
 def choose_category():
 
     categories = {
@@ -60,10 +52,7 @@ def choose_category():
 
     return selected_category, selected_subcategory
 
-
-# ---------------------------------------------------
 # Add Expense
-# ---------------------------------------------------
 def add_expense():
 
     date = input("Enter date (YYYY-MM-DD): ")
@@ -93,10 +82,7 @@ def add_expense():
 
     print("Expense added successfully!")
 
-
-# ---------------------------------------------------
 # View All Expenses
-# ---------------------------------------------------
 def view_expenses():
     df = load_data()
     if df.empty:
@@ -105,19 +91,13 @@ def view_expenses():
         print("\nHere are all your recorded expenses:\n")
         print(df.to_string(index=False))
 
-
-# ---------------------------------------------------
 # Calculate Total Spending
-# ---------------------------------------------------
 def calculate_total():
     df = load_data()
     total = df["Amount"].sum()
     print(f"\nTotal money spent so far: {total:.2f}")
 
-
-# ---------------------------------------------------
 # Monthly Summary
-# ---------------------------------------------------
 def monthly_summary():
 
     month = input("Enter month (YYYY-MM): ")
@@ -137,10 +117,7 @@ def monthly_summary():
     else:
         print(f"\nTotal spending for {month}: {filtered['Amount'].sum():.2f}")
 
-
-# ---------------------------------------------------
 # Show Category-wise Graph
-# ---------------------------------------------------
 def show_graph():
 
     df = load_data()
@@ -159,10 +136,7 @@ def show_graph():
     plt.tight_layout()
     plt.show()
 
-
-# ---------------------------------------------------
 # Main Menu
-# ---------------------------------------------------
 def main():
 
     while True:
