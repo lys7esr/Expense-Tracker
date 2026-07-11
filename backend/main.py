@@ -1,3 +1,6 @@
+# basic code without flask, contains all the feature, isn't required in the future
+# this code was the first draft, for command line interface
+
 import os
 import pandas as pd
 from datetime import datetime

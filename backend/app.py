@@ -1,3 +1,7 @@
+# uses flask as a framework to connect the database and frontend, db currently used is csv 
+# in the future connection with mysql or mongoDB can also be done
+# jwt authentication can be used
+
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import csv

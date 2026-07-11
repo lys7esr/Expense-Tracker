@@ -1,3 +1,5 @@
+# It is used to pip install all the libraries that are required to be downloaded before running the code
+
 flask
 flask-cors
 pandas
