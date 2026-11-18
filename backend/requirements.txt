@@ -2,6 +2,5 @@
 
 flask
 flask-cors
-pandas
-matplotlib
 gunicorn
+Flask-SQLAlchemy

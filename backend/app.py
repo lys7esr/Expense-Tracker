@@ -1,223 +1,274 @@
-# uses flask as a framework to connect the database and frontend, db currently used is csv 
-# in the future connection with mysql or mongoDB can also be done
-# jwt authentication can be used
 
-from flask import Flask, request, jsonify, send_file
+from datetime import date
+from decimal import Decimal, InvalidOperation
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-import csv
-import os
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from io import BytesIO
-import pandas as pd
-from pathlib import Path 
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
+
+from database import db
+from models import User, Category, Transaction, Budget
 
 app = Flask(__name__)
-CORS(app)
 
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///spendwise.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-FILE_NAME = DATA_DIR / "expenses.csv"
-BUDGET_FILE = DATA_DIR / "budgets.csv"
+CORS(app, resources={r"/api/*": {
+    "origins": ["http://localhost:5173", "http://127.0.0.1:5173"]
+}})
+db.init_app(app)
 
-#INITIALIZE FILES
-def initialize_files():
-    if not os.path.exists(FILE_NAME):
-        pd.DataFrame(columns=["Date", "Category", "SubCategory", "Amount"]).to_csv(FILE_NAME, index=False)
-
-    if not os.path.exists(BUDGET_FILE):
-        pd.DataFrame(columns=["Month", "Budget"]).to_csv(BUDGET_FILE, index=False)
-
-initialize_files()
+DEV_USER_ID = 1
 
 
-#LOAD EXPENSES
-def load_expenses():
-    df = pd.read_csv(FILE_NAME)
-
-    if df.empty:
-        return df
-
-    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-    df = df.dropna(subset=["Date"])
-
-    df["Amount"] = pd.to_numeric(df["Amount"], errors="coerce")
-    df = df.dropna(subset=["Amount"])
-
-    df["Month"] = df["Date"].dt.to_period("M").astype(str)
-
-    return df
+def to_paise(value):
+    try:
+        amount = Decimal(str(value))
+        if not amount.is_finite() or amount <= 0:
+            raise ValueError("Amount must be positive")
+        if amount.as_tuple().exponent < -2:
+            raise ValueError("Maximum two decimal places")
+        return int(amount * 100)
+    except (InvalidOperation, TypeError):
+        raise ValueError("Invalid amount")
 
 
-#ADD EXPENSE
-@app.route("/add-expense", methods=["POST"])
-def add_expense():
-    data = request.json
-
-    new_row = pd.DataFrame([[data["date"], data["category"], data["subcategory"], data["amount"]]],
-                           columns=["Date", "Category", "SubCategory", "Amount"])
-
-    new_row.to_csv(FILE_NAME, mode='a', header=False, index=False)
-
-    return jsonify({"message": "Expense added successfully"})
-
-
-#GET ALL
-@app.route("/expenses", methods=["GET"])
-def get_expenses():
-    return jsonify(pd.read_csv(FILE_NAME).to_dict(orient="records"))
+def serialize_transaction(tx):
+    return {
+        "id": tx.id,
+        "type": tx.type,
+        "amount": tx.amount_paise / 100,
+        "category": tx.category.name,
+        "subcategory": tx.subcategory,
+        "description": tx.description,
+        "date": tx.date.isoformat()
+    }
 
 
-#TOTAL
-@app.route("/total", methods=["GET"])
-def get_total():
-    df = load_expenses()
-    return jsonify({"total": float(df["Amount"].sum()) if not df.empty else 0})
+def get_category(name, tx_type):
+    category = db.session.execute(
+        db.select(Category).filter_by(
+            user_id=DEV_USER_ID,
+            name=name,
+            type=tx_type
+        )
+    ).scalar_one_or_none()
+
+    if category is None:
+        category = Category(
+            user_id=DEV_USER_ID,
+            name=name,
+            type=tx_type
+        )
+        db.session.add(category)
+        db.session.flush()
+
+    return category
 
 
-#MONTHLY TOTALS
-@app.route("/monthly-totals", methods=["GET"])
-def monthly_totals():
-    df = load_expenses()
-    if df.empty:
-        return jsonify([])
+def parse_transaction(data):
+    tx_type = data.get("type", "expense")
+    if tx_type not in ("income", "expense"):
+        raise ValueError("Type must be income or expense")
 
-    monthly = df.groupby("Month")["Amount"].sum().reset_index()
-    return jsonify(monthly.to_dict(orient="records"))
+    category_name = str(data.get("category", "")).strip()
+    if not category_name:
+        raise ValueError("Category is required")
+
+    try:
+        tx_date = date.fromisoformat(str(data["date"]))
+    except (KeyError, TypeError, ValueError):
+        raise ValueError("Date must be YYYY-MM-DD")
+
+    amount_paise = to_paise(data.get("amount"))
+
+    return {
+        "type": tx_type,
+        "category": get_category(category_name, tx_type),
+        "date": tx_date,
+        "amount_paise": amount_paise,
+        "subcategory": str(data.get("subcategory") or "").strip(),
+        "description": str(data.get("description") or "").strip()
+    }
 
 
-#MONTHLY SUMMARY (SPECIFIC MONTH)
-@app.route("/monthly-summary/<month>", methods=["GET"])
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"error": "Resource not found"}), 404
+
+
+@app.route("/api/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok", "app": "SpendWise"})
+
+
+@app.route("/api/transactions", methods=["GET"])
+def list_transactions():
+    transactions = db.session.execute(
+        db.select(Transaction)
+        .filter_by(user_id=DEV_USER_ID)
+        .order_by(Transaction.date.desc(), Transaction.id.desc())
+    ).scalars().all()
+
+    return jsonify([serialize_transaction(t) for t in transactions])
+
+
+@app.route("/api/transactions", methods=["POST"])
+def create_transaction():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "JSON object required"}), 400
+
+    try:
+        fields = parse_transaction(data)
+        transaction = Transaction(user_id=DEV_USER_ID, **fields)
+        db.session.add(transaction)
+        db.session.commit()
+        return jsonify(serialize_transaction(transaction)), 201
+
+    except (ValueError, IntegrityError) as error:
+        db.session.rollback()
+        return jsonify({"error": str(error)}), 400
+
+
+@app.route("/api/transactions/<int:tx_id>", methods=["PUT"])
+def update_transaction(tx_id):
+    transaction = db.session.get(Transaction, tx_id)
+
+    if transaction is None or transaction.user_id != DEV_USER_ID:
+        return jsonify({"error": "Transaction not found"}), 404
+
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "JSON object required"}), 400
+
+    try:
+        current = serialize_transaction(transaction)
+        current.update(data)
+        fields = parse_transaction(current)
+
+        for key, value in fields.items():
+            setattr(transaction, key, value)
+
+        db.session.commit()
+        return jsonify(serialize_transaction(transaction))
+
+    except (ValueError, IntegrityError) as error:
+        db.session.rollback()
+        return jsonify({"error": str(error)}), 400
+
+
+@app.route("/api/transactions/<int:tx_id>", methods=["DELETE"])
+def delete_transaction(tx_id):
+    transaction = db.session.get(Transaction, tx_id)
+
+    if transaction is None or transaction.user_id != DEV_USER_ID:
+        return jsonify({"error": "Transaction not found"}), 404
+
+    db.session.delete(transaction)
+    db.session.commit()
+    return jsonify({"message": "Transaction deleted"})
+
+
+@app.route("/api/summary/<month>", methods=["GET"])
 def monthly_summary(month):
-    df = load_expenses()
+    try:
+        date.fromisoformat(month + "-01")
+        if len(month) != 7:
+            raise ValueError()
+    except ValueError:
+        return jsonify({"error": "Month must be YYYY-MM"}), 400
 
-    filtered = df[df["Month"] == month]
+    transactions = db.session.execute(
+        db.select(Transaction).filter(
+            Transaction.user_id == DEV_USER_ID,
+            func.strftime("%Y-%m", Transaction.date) == month
+        )
+    ).scalars().all()
 
-    if filtered.empty:
-        return jsonify({"total": 0, "categories": {}})
+    income = sum(
+        t.amount_paise for t in transactions if t.type == "income"
+    )
+    expenses = sum(
+        t.amount_paise for t in transactions if t.type == "expense"
+    )
 
-    total = float(filtered["Amount"].sum())
-    category_breakdown = filtered.groupby("Category")["Amount"].sum().to_dict()
+    categories = {}
+    for t in transactions:
+        if t.type == "expense":
+            name = t.category.name
+            categories[name] = categories.get(name, 0) + t.amount_paise
 
     return jsonify({
-        "total": total,
-        "categories": category_breakdown
+        "month": month,
+        "income": income / 100,
+        "expenses": expenses / 100,
+        "net_cash_flow": (income - expenses) / 100,
+        "categories": {
+            name: amount / 100
+            for name, amount in categories.items()
+        }
     })
 
 
-#CATEGORY CHART
-@app.route("/chart", methods=["GET"])
-def category_chart():
-    df = load_expenses()
-
-    if df.empty:
-        return jsonify({"error": "No data"})
-
-    grouped = df.groupby("Category")["Amount"].sum()
-
-    fig, ax = plt.subplots(figsize=(8,5))
-    ax.bar(grouped.index, grouped.values)
-    ax.set_title("Expenses by Category")
-    ax.set_xlabel("Category")
-    ax.set_ylabel("Amount")
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-
-    img = BytesIO()
-    fig.savefig(img, format="png")
-    img.seek(0)
-    plt.close(fig)
-
-    return send_file(img, mimetype="image/png")
-
-
-#MONTHLY LINE CHART
-@app.route("/line-chart", methods=["GET"])
-def line_chart():
-    df = load_expenses()
-
-    if df.empty:
-        return jsonify({"error": "No data"})
-
-    monthly = df.groupby("Month")["Amount"].sum().sort_index()
-
-    fig, ax = plt.subplots(figsize=(8,5))
-    ax.plot(monthly.index, monthly.values, marker="o")
-    ax.set_title("Monthly Expense Comparison")
-    ax.set_xlabel("Month")
-    ax.set_ylabel("Amount")
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-
-    img = BytesIO()
-    fig.savefig(img, format="png")
-    img.seek(0)
-    plt.close(fig)
-
-    return send_file(img, mimetype="image/png")
-
-
-#PIE CHART
-@app.route("/pie-chart/<month>/<category>", methods=["GET"])
-def pie_chart(month, category):
-    df = load_expenses()
-
-    filtered = df[(df["Month"] == month) & (df["Category"] == category)]
-
-    if filtered.empty:
-        return jsonify({"error": "No data"})
-
-    grouped = filtered.groupby("SubCategory")["Amount"].sum()
-
-    fig, ax = plt.subplots(figsize=(6,6))
-    ax.pie(grouped.values, labels=grouped.index, autopct="%1.1f%%")
-    ax.set_title(f"{month} - {category}")
-
-    img = BytesIO()
-    fig.savefig(img, format="png")
-    img.seek(0)
-    plt.close(fig)
-
-    return send_file(img, mimetype="image/png")
-
-
-#BUDGET SYSTEM
-@app.route("/set-budget", methods=["POST"])
-def set_budget():
-    data = request.json
-    month = data["month"]
-    budget_value = float(data["budget"])
-
-    budgets = pd.read_csv(BUDGET_FILE)
-    budgets = budgets[budgets["Month"] != month]
-
-    new_row = pd.DataFrame([[month, budget_value]], columns=["Month", "Budget"])
-    budgets = pd.concat([budgets, new_row], ignore_index=True)
-    budgets.to_csv(BUDGET_FILE, index=False)
-
-    return jsonify({"message": "Budget set successfully"})
-
-
-@app.route("/budget-status/<month>", methods=["GET"])
-def budget_status(month):
-    df = load_expenses()
-    budgets = pd.read_csv(BUDGET_FILE)
-
-    if month not in budgets["Month"].values:
-        return jsonify({"budget": 0, "spent": 0, "remaining": 0})
-
-    budget_value = float(budgets[budgets["Month"] == month]["Budget"].values[0])
-    spent = df[df["Month"] == month]["Amount"].sum() if not df.empty else 0
-    remaining = budget_value - spent
+@app.route("/api/budgets/<month>", methods=["GET"])
+def get_budget(month):
+    budget = db.session.execute(
+        db.select(Budget).filter_by(
+            user_id=DEV_USER_ID, month=month
+        )
+    ).scalar_one_or_none()
 
     return jsonify({
-        "budget": budget_value,
-        "spent": float(spent),
-        "remaining": float(remaining)
+        "month": month,
+        "budget": budget.amount_paise / 100 if budget else 0
     })
+
+
+@app.route("/api/budgets/<month>", methods=["PUT"])
+def set_budget(month):
+    try:
+        date.fromisoformat(month + "-01")
+        if len(month) != 7:
+            raise ValueError("Month must be YYYY-MM")
+
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            raise ValueError("JSON object required")
+
+        amount = to_paise(data.get("amount"))
+
+        budget = db.session.execute(
+            db.select(Budget).filter_by(
+                user_id=DEV_USER_ID, month=month
+            )
+        ).scalar_one_or_none()
+
+        if budget is None:
+            budget = Budget(user_id=DEV_USER_ID, month=month)
+            db.session.add(budget)
+
+        budget.amount_paise = amount
+        db.session.commit()
+
+        return jsonify({"month": month, "budget": amount / 100})
+
+    except (ValueError, IntegrityError) as error:
+        db.session.rollback()
+        return jsonify({"error": str(error)}), 400
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    with app.app_context():
+        db.create_all()
+
+        if db.session.get(User, DEV_USER_ID) is None:
+            db.session.add(User(
+                id=DEV_USER_ID,
+                username="local_dev",
+                password_hash="DEV_ONLY_NO_LOGIN"
+            ))
+            db.session.commit()
+
+    app.run(debug=True)
