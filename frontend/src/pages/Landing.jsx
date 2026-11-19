@@ -291,11 +291,14 @@ export default function Landing() {
             <p>Everything you need to get closer to your financial goals.</p>
           </div>
           <div className="feature-grid">
-            {features.map(({ number, title, description, icon: Icon }) => (
+            {features.map(({ number, title, description, icon}) => (
               <article className="feature-item" key={number}>
                 <div className="feature-item-top">
                   <span>{number} / 04</span>
-                  <Icon size={27} strokeWidth={1.35} />
+                  {icon && (() => {
+                    const Component = icon;
+                    return <Component size={27} strokeWidth={1.35} />;
+                  })()}
                 </div>
                 <h3>{title}</h3>
                 <p>{description}</p>

@@ -76,6 +76,7 @@ function comparison(current, previous) {
 }
 
 function Card({ label, value, note, featured, icon: Icon }) {
+  const IconComponent = Icon;
   return (
     <div
       className={`sw-metric ${
@@ -84,7 +85,7 @@ function Card({ label, value, note, featured, icon: Icon }) {
     >
       <div className="sw-metric-top">
         <span>{label}</span>
-        <Icon size={19} />
+        <IconComponent size={19} />
       </div>
 
       <strong>{money(value)}</strong>
