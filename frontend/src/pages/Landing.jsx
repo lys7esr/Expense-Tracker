@@ -1,4 +1,4 @@
-import swMonogramDark from "../assets/spendwise-monogram-dark.svg";
+import swMonogram from "../assets/spendwise-monogram.svg";
 import swWordmark from "../assets/spendwise-wordmark.svg";
 import swWordmarkDark from "../assets/spendwise-wordmark-dark.svg";
 import { useCallback, useEffect, useState } from "react";
@@ -56,9 +56,11 @@ const features = [
 function Wordmark({ light = false }) {
   return (
     <img
-      src={light ? swWordmark : swWordmarkDark}
+      src={light ? swWordmarkDark : swWordmark}
       alt="SpendWise"
-      className={`brand-wordmark-image ${light ? "brand-wordmark-light" : ""}`}
+      className={`brand-wordmark-image ${
+        light ? "brand-wordmark-light" : ""
+      }`}
     />
   );
 }
@@ -154,7 +156,7 @@ export default function Landing() {
       <header className="landing-header">
         <Link to="/" className="landing-logo" aria-label="SpendWise home">
           <img
-            src={swMonogramDark}
+            src={swMonogram}
             className="brand-header-monogram"
             alt=""
           />
@@ -302,8 +304,9 @@ export default function Landing() {
             ))}
           </div>
           <p className="features-footnote">
-            Some features are being developed. The core transaction tracker is
-            available in the local preview.
+            Account your transactions with ease. Know where your money is going.
+            Set budgets and savings goals. Track recurring payments.
+            All in one place.
           </p>
         </section>
 

@@ -2,11 +2,27 @@
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, ArrowLeftRight, Wallet,
-  Target, Users, Repeat2, ChartNoAxesCombined,
-  Settings, Moon, Sun, Menu, X, Bell,
-  Landmark, ChevronRight
+  LayoutDashboard,
+  ArrowLeftRight,
+  Wallet,
+  Target,
+  Users,
+  Repeat2,
+  ChartNoAxesCombined,
+  Settings,
+  Moon,
+  Sun,
+  Menu,
+  X,
+  Bell,
+  ChevronRight,
+  ArrowUpRight,
 } from "lucide-react";
+
+import swBone from "../assets/spendwise-monogram.svg";
+import swGreen from "../assets/spendwise-monogram-dark.svg";
+import wordBone from "../assets/spendwise-wordmark.svg";
+import wordGreen from "../assets/spendwise-wordmark-dark.svg";
 
 const navigation = [
   { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -21,9 +37,12 @@ const navigation = [
 export default function AppLayout({ theme, toggleTheme }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+
   const active = navigation.find(
     (item) => item.path === location.pathname
   );
+
+  const dark = theme === "dark";
 
   const navLink = (item) => (
     <NavLink
@@ -41,7 +60,7 @@ export default function AppLayout({ theme, toggleTheme }) {
   );
 
   return (
-    <div className="app-shell">
+    <div className="app-shell sw-shell">
       {mobileOpen && (
         <button
           className="mobile-overlay"
@@ -51,22 +70,35 @@ export default function AppLayout({ theme, toggleTheme }) {
       )}
 
       <aside className={`sidebar ${mobileOpen ? "open" : ""}`}>
-        <div className="brand">
-          <div className="brand-mark"><Landmark size={23} /></div>
-          <div>
-            <strong>SpendWise<span className="brand-dot">.</span></strong>
-            <small>PERSONAL FINANCE</small>
-          </div>
-          <button
-            className="mobile-close"
-            onClick={() => setMobileOpen(false)}
-            aria-label="Close menu"
-          >
-            <X size={20} />
-          </button>
-        </div>
+        <NavLink
+          to="/"
+          className="brand sw-sidebar-brand"
+          onClick={() => setMobileOpen(false)}
+          aria-label="SpendWise home"
+        >
+          <img
+            className="sw-sidebar-icon"
+            src={dark ? swBone : swGreen}
+            alt=""
+          />
+          <img
+            className="sw-sidebar-wordmark"
+            src={dark ? wordBone : wordGreen}
+            alt="SpendWise"
+          />
+          <ArrowUpRight size={13} className="sw-brand-arrow" />
+        </NavLink>
 
-        <div className="nav-caption">WORKSPACE</div>
+        <button
+          className="mobile-close"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close menu"
+        >
+          <X size={20} />
+        </button>
+
+        <div className="nav-caption">YOUR WORKSPACE</div>
+
         <nav className="sidebar-nav">
           {navigation.map(navLink)}
         </nav>
@@ -80,11 +112,12 @@ export default function AppLayout({ theme, toggleTheme }) {
             <Settings size={19} />
             <span>Settings</span>
           </NavLink>
+
           <div className="profile">
             <div className="avatar">SW</div>
             <div>
               <strong>Local Workspace</strong>
-              <small>Development mode</small>
+              <small>Personal finance · Local mode</small>
             </div>
           </div>
         </div>
@@ -100,10 +133,12 @@ export default function AppLayout({ theme, toggleTheme }) {
             >
               <Menu size={22} />
             </button>
+
             <span className="breadcrumb">Workspace</span>
             <ChevronRight size={14} className="muted-icon" />
             <strong>{active?.label || "Settings"}</strong>
           </div>
+
           <div className="topbar-actions">
             <button
               className="icon-button"
@@ -111,11 +146,16 @@ export default function AppLayout({ theme, toggleTheme }) {
               aria-label="Toggle color theme"
               title="Toggle theme"
             >
-              {theme === "light" ? <Moon size={19} /> : <Sun size={19} />}
+              {dark ? <Sun size={19} /> : <Moon size={19} />}
             </button>
-            <span className="notification-icon" title="Notifications coming soon">
+
+            <span
+              className="notification-icon"
+              title="Notifications will be available in Phase 4"
+            >
               <Bell size={19} />
             </span>
+
             <div className="topbar-avatar">SW</div>
           </div>
         </header>
