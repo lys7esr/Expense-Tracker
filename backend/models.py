@@ -221,3 +221,116 @@ class MoneyRepayment(db.Model):
         default=lambda: datetime.now(timezone.utc),
         nullable=False
     )
+
+class RecurringSchedule(db.Model):
+    __tablename__ = "recurring_schedules"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False
+    )
+
+    category_id = db.Column(
+        db.Integer,
+        db.ForeignKey("categories.id"),
+        nullable=False
+    )
+
+    name = db.Column(db.String(100), nullable=False)
+
+    type = db.Column(db.String(10), nullable=False)
+
+    amount_paise = db.Column(
+        db.Integer,
+        nullable=False
+    )
+
+    frequency = db.Column(
+        db.String(10),
+        nullable=False
+    )
+
+    next_due_date = db.Column(
+        db.Date,
+        nullable=False
+    )
+
+    anchor_day = db.Column(
+        db.Integer,
+        nullable=False
+    )
+
+    anchor_month = db.Column(
+        db.Integer,
+        nullable=False
+    )
+
+    active = db.Column(
+        db.Boolean,
+        default=True,
+        nullable=False
+    )
+
+    description = db.Column(db.String(255))
+
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False
+    )
+
+    category = db.relationship("Category")
+
+    occurrences = db.relationship(
+        "RecurringOccurrence",
+        backref="schedule",
+        cascade="all, delete-orphan"
+    )
+
+
+class RecurringOccurrence(db.Model):
+    __tablename__ = "recurring_occurrences"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    schedule_id = db.Column(
+        db.Integer,
+        db.ForeignKey("recurring_schedules.id"),
+        nullable=False
+    )
+
+    due_date = db.Column(
+        db.Date,
+        nullable=False
+    )
+
+    status = db.Column(
+        db.String(10),
+        nullable=False
+    )
+
+    amount_paise = db.Column(
+        db.Integer,
+        nullable=False
+    )
+
+    transaction_id = db.Column(
+        db.Integer,
+        nullable=True
+    )
+
+    processed_date = db.Column(
+        db.Date,
+        nullable=False
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "schedule_id",
+            "due_date",
+            name="unique_recurring_occurrence"
+        ),
+    )

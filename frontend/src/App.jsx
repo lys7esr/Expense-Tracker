@@ -9,6 +9,7 @@ import Transactions from "./pages/Transactions";
 import Budgets from "./pages/Budgets";
 import Goals from "./pages/Goals";
 import People from "./pages/People";
+import Recurring from "./pages/Recurring";
 
 import "./App.css";
 
@@ -55,7 +56,7 @@ export default function App() {
         <Route path="/budgets" element={<Budgets />} />
         <Route path="/goals" element={<Goals />} />
         <Route path="/people" element={<People />} />
-        <Route path="/recurring" element={<ComingSoon title="Recurring" />} />
+        <Route path="/recurring" element={<Recurring />} />
         <Route path="/reports" element={<ComingSoon title="Reports" />} />
         <Route path="/settings" element={<ComingSoon title="Settings" />} />
       </Route>
