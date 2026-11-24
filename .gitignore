@@ -5,11 +5,14 @@ __pycache__/
 venv/
 
 # Local databases and environment
+instance/
+*.sqlite
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
 .env
+.env.local
 .env.*
 !.env.example
 
@@ -18,3 +21,5 @@ node_modules/
 dist/
 
 .DS_Store
+
+*.bak
