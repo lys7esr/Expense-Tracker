@@ -93,3 +93,72 @@ class CategoryBudget(db.Model):
             "month"
         ),
     )
+
+class SavingsGoal(db.Model):
+    __tablename__ = "savings_goals"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False
+    )
+
+    name = db.Column(db.String(100), nullable=False)
+
+    target_paise = db.Column(
+        db.Integer,
+        nullable=False
+    )
+
+    deadline = db.Column(db.Date, nullable=True)
+
+    description = db.Column(db.String(255))
+
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False
+    )
+
+    contributions = db.relationship(
+        "SavingsContribution",
+        backref="goal",
+        cascade="all, delete-orphan"
+    )
+
+
+class SavingsContribution(db.Model):
+    __tablename__ = "savings_contributions"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    goal_id = db.Column(
+        db.Integer,
+        db.ForeignKey("savings_goals.id"),
+        nullable=False
+    )
+
+    amount_paise = db.Column(
+        db.Integer,
+        nullable=False
+    )
+
+    type = db.Column(
+        db.String(10),
+        nullable=False
+    )
+
+    date = db.Column(
+        db.Date,
+        nullable=False
+    )
+
+    note = db.Column(db.String(255))
+
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False
+    )
