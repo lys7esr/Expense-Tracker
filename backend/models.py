@@ -57,3 +57,39 @@ class Budget(db.Model):
     __table_args__ = (
         db.UniqueConstraint("user_id", "month"),
     )
+class CategoryBudget(db.Model):
+    __tablename__ = "category_budgets"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False
+    )
+
+    category_id = db.Column(
+        db.Integer,
+        db.ForeignKey("categories.id"),
+        nullable=False
+    )
+
+    month = db.Column(
+        db.String(7),
+        nullable=False
+    )
+
+    amount_paise = db.Column(
+        db.Integer,
+        nullable=False
+    )
+
+    category = db.relationship("Category")
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id",
+            "category_id",
+            "month"
+        ),
+    )

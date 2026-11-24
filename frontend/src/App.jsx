@@ -6,6 +6,7 @@ import AppLayout from "./components/AppLayout";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
+import Budgets from "./pages/Budgets";
 
 import "./App.css";
 
@@ -49,7 +50,7 @@ export default function App() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/transactions" element={<Transactions />} />
-        <Route path="/budgets" element={<ComingSoon title="Budgets" />} />
+        <Route path="/budgets" element={<Budgets />} />
         <Route path="/goals" element={<ComingSoon title="Savings Goals" />} />
         <Route path="/people" element={<ComingSoon title="People & Money" />} />
         <Route path="/recurring" element={<ComingSoon title="Recurring" />} />
