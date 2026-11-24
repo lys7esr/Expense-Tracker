@@ -9,6 +9,7 @@ from routes.transactions import transactions_bp
 from routes.dashboard import dashboard_bp
 from routes.budgets import budgets_bp
 from routes.goals import goals_bp
+from routes.people import people_bp
 
 
 def create_app(config=None):
@@ -51,6 +52,11 @@ def create_app(config=None):
         goals_bp,
         url_prefix="/api"
     )
+
+    app.register_blueprint(
+    people_bp,
+    url_prefix="/api"
+)
 
     @app.route("/api/health", methods=["GET"])
     def health():

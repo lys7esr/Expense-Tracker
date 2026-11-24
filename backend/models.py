@@ -162,3 +162,62 @@ class SavingsContribution(db.Model):
         default=lambda: datetime.now(timezone.utc),
         nullable=False
     )
+
+class MoneyRecord(db.Model):
+    __tablename__ = "money_records"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False
+    )
+
+    person = db.Column(db.String(100), nullable=False)
+
+    type = db.Column(db.String(10), nullable=False)
+
+    amount_paise = db.Column(db.Integer, nullable=False)
+
+    purpose = db.Column(db.String(255))
+
+    date = db.Column(db.Date, nullable=False)
+
+    due_date = db.Column(db.Date, nullable=True)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False
+    )
+
+    repayments = db.relationship(
+        "MoneyRepayment",
+        backref="record",
+        cascade="all, delete-orphan"
+    )
+
+
+class MoneyRepayment(db.Model):
+    __tablename__ = "money_repayments"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    record_id = db.Column(
+        db.Integer,
+        db.ForeignKey("money_records.id"),
+        nullable=False
+    )
+
+    amount_paise = db.Column(db.Integer, nullable=False)
+
+    date = db.Column(db.Date, nullable=False)
+
+    note = db.Column(db.String(255))
+
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False
+    )

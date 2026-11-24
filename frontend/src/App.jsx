@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import Budgets from "./pages/Budgets";
 import Goals from "./pages/Goals";
+import People from "./pages/People";
 
 import "./App.css";
 
@@ -53,7 +54,7 @@ export default function App() {
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/budgets" element={<Budgets />} />
         <Route path="/goals" element={<Goals />} />
-        <Route path="/people" element={<ComingSoon title="People & Money" />} />
+        <Route path="/people" element={<People />} />
         <Route path="/recurring" element={<ComingSoon title="Recurring" />} />
         <Route path="/reports" element={<ComingSoon title="Reports" />} />
         <Route path="/settings" element={<ComingSoon title="Settings" />} />
