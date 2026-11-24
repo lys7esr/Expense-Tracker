@@ -11,6 +11,8 @@ from routes.budgets import budgets_bp
 from routes.goals import goals_bp
 from routes.people import people_bp
 from routes.recurring import recurring_bp
+from routes.intelligence import intelligence_bp
+from routes.cycles import cycles_bp
 
 
 def create_app(config=None):
@@ -61,6 +63,16 @@ def create_app(config=None):
 
     app.register_blueprint(
     recurring_bp,
+    url_prefix="/api"
+    )
+
+    app.register_blueprint(
+    intelligence_bp,
+    url_prefix="/api"
+    )
+
+    app.register_blueprint(
+    cycles_bp,
     url_prefix="/api"
     )
 

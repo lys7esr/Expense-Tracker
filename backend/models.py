@@ -334,3 +334,46 @@ class RecurringOccurrence(db.Model):
             name="unique_recurring_occurrence"
         ),
     )
+class CyclePreference(db.Model):
+    __tablename__ = "cycle_preferences"
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        primary_key=True
+    )
+
+    enabled = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False
+    )
+
+
+class CycleRecord(db.Model):
+    __tablename__ = "cycle_records"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False,
+        index=True
+    )
+
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False
+    )
+
+    __table_args__ = (
+        db.CheckConstraint(
+            "end_date >= start_date",
+            name="valid_cycle_dates"
+        ),
+    )
